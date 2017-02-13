@@ -38,7 +38,7 @@ RUN systemctl disable docker \
     && systemctl enable early-docker \
     && systemctl enable etcd \
     && systemctl enable flannel \
-    && systemctl enable update-firewall \
+    # && systemctl enable update-firewall \
     && systemctl enable kubelet
 
 # Clean rootfs from image-builder.
