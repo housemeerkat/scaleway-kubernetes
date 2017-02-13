@@ -1,11 +1,11 @@
 #!/bin/bash
 
 if [ ! -f /etc/scw-int-done-setup ]; then
-    HOST=$(hostname)
-    SCWIP=$(hostname  -I | awk '{print $1}')
-    SCWPUBLIC=$(curl http://v4.myip.ninja)
+    HOST=$(scw-metadata | grep -Po 'HOSTNAME=\K(.*)')
+    SCWIP=$(scw-metadata | grep -Po 'PRIVATE_IP=\K(.*)')
+    SCWPUBLIC=$(scw-metadata | grep -Po 'PUBLIC_IP_ADDRESS=\K(.*)')
     METADATA=`curl http://169.254.42.42/conf`
-    MODEL=$(echo "$METADATA" | egrep COMMERCIAL_TYPE= | sed 's/COMMERCIAL_TYPE=//g')
+    MODEL=$(scw-metadata | grep -Po 'COMMERCIAL_TYPE=\K(.*)')
     DISCOVER=$(echo "$METADATA" | egrep TAGS_0= | sed 's/TAGS_0=discover://g')
     APIKEY=$(echo "$METADATA"  | egrep TAGS_1= | sed 's/TAGS_1=api://g')
     PROXY=$(echo "$METADATA"  | egrep TAGS_2= | sed 's/TAGS_2=proxy://g')

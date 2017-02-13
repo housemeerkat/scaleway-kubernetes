@@ -33,7 +33,8 @@ COPY ./rootfs/ /
 # Add early-docker group
 RUN addgroup early-docker
 
-RUN systemctl enable docker \
+RUN systemctl disable docker \
+    && systemctl enable docker \
     && systemctl enable early-docker \
     && systemctl enable etcd \
     && systemctl enable flannel \
