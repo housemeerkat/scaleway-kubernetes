@@ -3,24 +3,32 @@ Description=etcd
 Requires=scw-setup.service
 Wants=network.target network-online.target scw-setup.service early-docker.service
 After=network.target network-online.target scw-setup.service early-docker.service
+ConditionPathExists=/etc/scw-needs-etcd-service
 
 [Service]
 EnvironmentFile=-/etc/scw-env
 Environment=DOCKER_HOST=unix:///var/run/early-docker.sock
 ExecStartPre = /bin/bash -c 'if test -d /var/lib/etcd/proxy && test -d /var/lib/etcd/member; then mv /var/lib/etcd /var/lib/etcd`date +%s`; fi'
 ExecStart = /usr/bin/docker run \
-				--net=host \
-				-v /var/lib/etcd:/var/lib/etcd \
-				-v /etc/ssl:/etc/ssl:ro \
-				quay.io/coreos/etcd:v3.1.0 \
-				 etcd \
-				 --data-dir=/var/lib/etcd \
-				 --name="${ETCD_NAME}" \
-				 --discovery="${ETCD_DISCOVERY}" \
-				 --listen-peer-urls="${ETCD_LISTEN_PEER_URLS}" \
-				 --listen-client-urls="${ETCD_LISTEN_CLIENT_URLS}" \
-				 --advertise-client-urls="${ETCD_ADVERTISE_CLIENT_URLS}" \
-				 --initial-advertise-peer-urls="${ETCD_INITIAL_ADVERTISE_PEER_URLS}"
+        --net=host \
+        -v /var/lib/etcd:/var/lib/etcd \
+        -v /etc/ssl:/etc/ssl:ro \
+        -v /etc/etcd:/etc/etcd:ro \
+        quay.io/coreos/etcd:v3.1.0 \
+         etcd \
+         --data-dir=/var/lib/etcd \
+         --name="${ETCD_NAME_NODE}" \
+         --discovery="${ETCD_DISCOVERY_TOKEN}" \
+         --listen-peer-urls="${ETCD_LISTEN_PEER_URLS}" \
+         --listen-client-urls="${ETCD_LISTEN_CLIENT_URLS}" \
+         --advertise-client-urls="${ETCD_ADVERTISE_CLIENT_URLS}" \
+         --initial-advertise-peer-urls="${ETCD_INITIAL_ADVERTISE_PEER_URLS}"
+         --trusted-ca-file=/etc/etcd/ca.pem --client-cert-auth \
+         --cert-file=/etc/etcd/client.pem \
+         --key-file=/etc/etcd/client-key.pem \
+         --peer-trusted-ca-file=/etc/etcd/ca.pem --peer-client-cert-auth \
+         --peer-cert-file=/etc/etcd/peer.pem \
+         --peer-key-file=/etc/etcd/peer-key.pem
 
 Restart=always
 RestartSec=10s

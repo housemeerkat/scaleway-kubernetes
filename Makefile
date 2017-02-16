@@ -1,8 +1,8 @@
 NAME =			scaleway-kubernetes
-VERSION =		1.5.2
-VERSION_ALIASES =	1.5.2
+VERSION =		1.5.3
+VERSION_ALIASES =	1.5.3
 TITLE =			Kubernetes
-DESCRIPTION =		Kuberenetes v1.5.2
+DESCRIPTION =		Kuberenetes v1.5.3
 SOURCE_URL =		https://github.com/iosphere/scaleway-kubernetes
 DEFAULT_IMAGE_ARCH =	x86_64
 IMAGE_VOLUME_SIZE =	50G
