@@ -1,13 +1,70 @@
 # scaleway-kubernetes
 Scaleway image to run Kubernetes
 
-This will create a highly-available (multi-master) Kubernetes cluster on top of scaleway, built on top of the scaleway docker image. Currently, this has only been tested with x86_64 however armhf support will be added soon.
+This will create a highly-available (multi-master) Kubernetes cluster on top of scaleway, built on top of the scaleway docker image. Currently, this has only been tested with x86_64.
 
 Because scaleway does not support multiple-IPs per server, nor does it support loadbalancers, you'll need to use round-robin DNS to balance traffic across each Kubernetes node.
 
 ---
 
 ## Setup
+
+Supported tags:
+
+##### Scaleway/Firewall
+
+Since Scaleway's firewall has an ALLOW per default,
+you might want to configure an additional firewall per node.
+
+```
+scaleway:token:YOUR_SCALEWAY_TOKEN
+```
+
+##### ETCD
+
+You can use this image to generate an ETCD cluster by being a peer-node, or launch an ETCD proxy to attach to a remote ETCD cluster.
+If you do not pass either peer-related params or proxy-related-params, no
+etcd.service will be launched.
+
+```
+// specify that this machine uses an etcd-cluster with the name: MY_CLUSTER_NAME
+// use this variable, if you somehow need to access the etcd-cluster, either as
+a peer or as an etcd-client.
+etcd:clustername:MY_CLUSTER_NAME
+
+// An etcd discovery token from https://discovery.etcd.io/new?size=3
+// Be aware to specify the correct size.
+etcd:discover:https://discovery.etcd.io/56271f6167a9cecdd86b3e84320185d0
+
+// Whether this node should be an etcd-peer [Default:false]
+etcd:ispeer:false
+
+// Whether this node should act as an etcd-proxy [Default:false]
+etcd:isproxy:false
+```
+
+##### KUBERNETES
+
+Apart from being an etcd-node, this image can as well
+be used to lauch a kubernetes master or worker.
+
+```
+// If role is set, must be either `master` or `worker`
+kubernetes:role:master
+```
+
+##### ZEROTIER
+
+You can attach to a zerotier.conf network.
+
+```
+// If a zerotier-network-id is set, the image tries
+// to attach to the zerotier-network.
+// You will get a new network interface `zt0`
+zerotier:join:MY_ZEROTIER_NETWORK_ID
+```
+
+
 
 Due to the limited configuration parameters with Scaleway, it is required that you build your own image with Kubernetes certificates baked into your image. Because of this, setup is slightly more complex than I'd like it to be.
 
