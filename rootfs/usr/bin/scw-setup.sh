@@ -35,8 +35,8 @@ if [ ! -f /etc/scw-int-done-setup ]; then
     echo "ETCD_NAME_NODE=$SCW_ID" >>/etc/scw-env
     echo "ETCD_ADVERTISE_CLIENT_URLS=https://$SCW_DNSNAME_PRIVATE:2379" >>/etc/scw-env
     echo "ETCD_INITIAL_ADVERTISE_PEER_URLS=https://$SCW_DNSNAME_PRIVATE:2380" >>/etc/scw-env
-    echo "ETCD_LISTEN_CLIENT_URLS=https://0.0.0.0:2379" >>/etc/scw-env
-    echo "ETCD_LISTEN_PEER_URLS=https://0.0.0.0:2380" >>/etc/scw-env
+    echo "ETCD_LISTEN_CLIENT_URLS=https://$SCW_IPV4_PRIVATE:2379" >>/etc/scw-env
+    echo "ETCD_LISTEN_PEER_URLS=https://$SCW_IPV4_PRIVATE:2380" >>/etc/scw-env
 
     # map true/false to proxy config
     if [[ $ETCD_IS_PROXY == "true" ]]
