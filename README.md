@@ -27,10 +27,10 @@ If you do not pass either peer-related params or proxy-related-params, no
 etcd.service will be launched.
 
 ```
-// specify that this machine uses an etcd-cluster with the name: MY_CLUSTER_NAME
+// specify that this machine uses an etcd-cluster with the name: MY_ETCD_CLUSTER_NAME
 // use this variable, if you somehow need to access the etcd-cluster, either as
-a peer or as an etcd-client.
-etcd:clustername:MY_CLUSTER_NAME
+// a peer or as an etcd-client.
+etcd:clustername:MY_ETCD_CLUSTER_NAME
 
 // An etcd discovery token from https://discovery.etcd.io/new?size=3
 // Be aware to specify the correct size.
@@ -49,6 +49,15 @@ Apart from being an etcd-node, this image can as well
 be used to lauch a kubernetes master or worker.
 
 ```
+// specify that this machine uses an kubernetes-cluster with the name:
+// MY_KUBERNETES_CLUSTER_NAME
+// use this variable, if you somehow need to access the kubernetes-cluster.
+// This is the case for all nodes (master/worker), where `kubelet` is installed
+kubernetes:clustername:MY_KUBERNETES_CLUSTER_NAME
+
+// Node labels you want to attach to a `kubelet`.
+kubernetes:nodetags:KEY0=VALUE0,KEY1=VALUE1
+
 // If role is set, must be either `master` or `worker`
 kubernetes:role:master
 ```
