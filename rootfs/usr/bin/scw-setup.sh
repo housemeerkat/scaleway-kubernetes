@@ -111,6 +111,7 @@ then
     echo "KUBERNETES_REGISTER_SCHEDULABLE=false" >> /etc/scw-enc
   fi
 elif [[ $KUBERNETES_ROLE == "worker" ]]
+then
   # request that we actually launch kubectl.service
   touch /tmp/scw-needs-kubelet-service
 
