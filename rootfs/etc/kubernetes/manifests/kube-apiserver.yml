@@ -19,7 +19,7 @@ spec:
     - --logtostderr=true
     - --secure-port=443
     - --service-account-key-file=/etc/kubernetes/pki/apiserver-key.pem
-    - --service-cluster-ip-range=172.16.0.0/12
+    - --service-cluster-ip-range=172.16.0.0/16
     - --storage-backend=etcd3
     - --tls-cert-file=/etc/kubernetes/pki/apiserver.pem
     - --tls-private-key-file=/etc/kubernetes/pki/apiserver-key.pem
