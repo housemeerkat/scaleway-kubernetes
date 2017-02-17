@@ -88,9 +88,11 @@ curl --silent \
   https://cp-par1.scaleway.com/servers | jq '[.servers[] | select((.tags[] | contains("kubernetes:role:master")) and (.tags[] | contains("kubernetes:clustername:'$KUBERNETES_CLUSTERNAME'"))) | ["\(.id).priv.cloud.scaleway.com"]] | add | unique | join(",")'
 )
 KUBERNETES_ROLE=$(scw-server-tags | grep -Po '^kubernetes:role:\K(.*)$')
-# TODO: implement multiple tags
-KUBERNETES_NODE_TAGS=$(scw-server-tags | grep -Po '^kubernetes:nodetags:\K(.*)$')
-KUBERNETES_NODE_LABELS="role=${KUBERNETES_ROLE},scwmodel=${SCW_MODEL}"
+
+# convert `;` to `,`
+# kubernetes need comma, Scaleway needs semicolon `;`
+KUBERNETES_NODE_TAGS=$(scw-server-tags | grep -Po '^kubernetes:nodetags:\K(.*)$' | sed -e 's#;#,#')
+KUBERNETES_NODE_LABELS="role=${KUBERNETES_ROLE},scwmodel=${SCW_MODEL},${KUBERNETES_NODE_TAGS}"
 KUBERNETES_MASTER_SCHEDULABLE=$(scw-server-tags | grep -Po '^kubernetes:master:schedulable:\K(.*)$')
 echo "KUBERNETES_CLUSTERNAME=$KUBERNETES_CLUSTERNAME" >> /etc/scw-env
 echo "KUBERNETES_HOSTNAME=$KUBERNETES_HOSTNAME" >> /etc/scw-env
