@@ -7,23 +7,24 @@ spec:
   hostNetwork: true
   containers:
   - name: kube-apiserver
-    image: eu.gcr.io/google_containers/hyperkube:v1.5.3
+    image: gcr.io/google_containers/hyperkube:v1.5.3
     command:
     - /hyperkube
     - apiserver
+    - --admission-control=NamespaceLifecycle,NamespaceExists,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota
+    - --allow-privileged=true
+    - --basic-auth-file=/etc/kubernetes/basic_auth.csv
     - --bind-address=0.0.0.0
     - --etcd-servers=http://127.0.0.1:2379
-    - --service-cluster-ip-range=10.60.0.0/16
-    - --allow-privileged=true
     - --client-ca-file=/etc/kubernetes/ca.pem
+    - --logtostderr=true
+    - --secure-port=443
+    - --service-account-key-file=/etc/kubernetes/apiserver-key.pem
+    - --service-cluster-ip-range=172.16.0.0/12
+    - --storage-backend=etcd3
     - --tls-cert-file=/etc/kubernetes/apiserver.pem
     - --tls-private-key-file=/etc/kubernetes/apiserver-key.pem
-    - --basic-auth-file=/etc/kubernetes/basic_auth.csv
     - --token-auth-file=/etc/kubernetes/known_tokens.csv
-    - --secure-port=443
-    - --admission-control=NamespaceLifecycle,NamespaceExists,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota
-    - --service-account-key-file=/etc/kubernetes/apiserver-key.pem
-    - --logtostderr=true
     ports:
     - containerPort: 443
       hostPort: 443

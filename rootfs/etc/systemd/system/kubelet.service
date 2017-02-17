@@ -1,0 +1,28 @@
+[Unit]
+Description=Kubernetes Kubelet
+Wants=network.target network-online.target scw-setup.service
+After=network.target network-online.target scw-setup.service
+# scw-setup checks, whether this node actually needs kubernetes.
+# if kubernetes is needed, scw-setup will touch the following file.
+ConditionPathExists=/tmp/scw-needs-kubelet-service
+
+[Service]
+EnvironmentFile=-/etc/scw-env
+ExecStartPre=/bin/mkdir -p /etc/kubernetes/manifests /var/lib/kubelet /opt/bin
+ExecStartPre=/usr/bin/curl -L -o /opt/bin/kubelet -z /opt/bin/kubelet https://storage.googleapis.com/kubernetes-release/release/v1.5.3/bin/linux/amd64/kubelet
+ExecStartPre=/bin/chmod +x /opt/bin/kubelet
+ExecStart=/opt/bin/kubelet \
+        --api_servers=http://127.0.0.1:8080 \
+        --register-schedulable="${KUBERNETES_REGISTER_SCHEDULABLE}" \
+        --allow-privileged=true \
+        --config=/etc/kubernetes/manifests \
+        --node-labels="${KUBERNETES_NODE_LABELS}" \
+        --cluster-dns=172.16.254.254 \
+        --hostname-override="${KUBERNETES_HOSTNAME}" \
+        --cluster-domain=cluster.local
+Restart=always
+RestartSec=10
+[Install]
+
+WantedBy=multi-user.target
+

@@ -48,7 +48,7 @@ echo "ETCD_INITIAL_ADVERTISE_PEER_URLS=https://$SCW_DNSNAME_PRIVATE:2380" >>/etc
 
 # This must be an IP-Address unless you use DNS-SRV discovery for etcd.
 # Be aware that the private IP will change if you terminate your machine.
-echo "ETCD_LISTEN_CLIENT_URLS=https://127.0.0.1:2379,https://$SCW_IPV4_PRIVATE:2379" >>/etc/scw-env
+echo "ETCD_LISTEN_CLIENT_URLS=http://127.0.0.1:2379,https://127.0.0.1:2379,https://$SCW_IPV4_PRIVATE:2379" >>/etc/scw-env
 echo "ETCD_LISTEN_PEER_URLS=https://$SCW_IPV4_PRIVATE:2380" >>/etc/scw-env
 
 # map true/false to proxy config
@@ -75,6 +75,7 @@ fi
 
 KUBERNETES_CLUSTERNAME=$(scw-server-tags | grep -Po '^kubernetes:clustername:\K(.*)$')
 # query the Scaleway API and find all `kubernetes:role:master` belonging to this KUBERNETES_CLUSTERNAME
+KUBERNETES_HOSTNAME=$SCW_IPV4_PRIVATE
 KUBERNETES_MASTERS=$(
 curl --silent \
   --fail \
@@ -82,12 +83,40 @@ curl --silent \
   -H 'Content-Type: application/json' \
   https://cp-par1.scaleway.com/servers | jq '[.servers[] | select((.tags[] | contains("kubernetes:role:master")) and (.tags[] | contains("kubernetes:clustername:'$KUBERNETES_CLUSTERNAME'"))) | ["\(.id).priv.cloud.scaleway.com"]] | add | unique | join(",")'
 )
-KUBERNETES_NODE_TAGS=$(scw-server-tags | grep -Po '^kubernetes:nodetags:\K(.*)$')
 KUBERNETES_ROLE=$(scw-server-tags | grep -Po '^kubernetes:role:\K(.*)$')
+# TODO: implement multiple tags
+KUBERNETES_NODE_TAGS=$(scw-server-tags | grep -Po '^kubernetes:nodetags:\K(.*)$')
+KUBERNETES_NODE_LABELS="role=${KUBERNETES_ROLE},scwmodel=${SCW_MODEL}"
+KUBERNETES_MASTER_SCHEDULABLE=$(scw-server-tags | grep -Po '^kubernetes:master:schedulable:\K(.*)$')
 echo "KUBERNETES_CLUSTERNAME=$KUBERNETES_CLUSTERNAME" >> /etc/scw-env
+echo "KUBERNETES_HOSTNAME=$KUBERNETES_HOSTNAME" >> /etc/scw-env
 echo "KUBERNETES_MASTERS=$KUBERNETES_MASTERS" >> /etc/scw-env
+echo "KUBERNETES_NODE_LABELS=$KUBERNETES_NODE_LABELS" >> /etc/scw-env
 echo "KUBERNETES_NODE_TAGS=$KUBERNETES_NODE_TAGS" >> /etc/scw-env
 echo "KUBERNETES_ROLE=$KUBERNETES_ROLE" >> /etc/scw-env
+
+# whether to actually launch the etcd.service
+# and whether we want to schedule containers on masters
+if [[ $KUBERNETES_ROLE == "master" ]]
+then
+  # request that we actually launch kubectl.service
+  touch /tmp/scw-needs-kubelet-service
+
+  # check, whether we explicly requested scheduling on master
+  # otherwise fallback to `false
+  if [[ $KUBERNETES_MASTER_SCHEDULABLE == "true" ]]
+  then
+    echo "KUBERNETES_REGISTER_SCHEDULABLE=true" >> /etc/scw-enc
+  else
+    echo "KUBERNETES_REGISTER_SCHEDULABLE=false" >> /etc/scw-enc
+  fi
+elif [[ $KUBERNETES_ROLE == "worker" ]]
+  # request that we actually launch kubectl.service
+  touch /tmp/scw-needs-kubelet-service
+
+  # schedule pods on workers
+  echo "KUBERNETES_REGISTER_SCHEDULABLE=true" >> /etc/scw-enc
+fi
 
 ZEROTIER_NETWORK_ID=$(scw-server-tags | grep -Po '^zerotier:join:\K(.*)$')
 echo "ZEROTIER_NETWORK_ID=$ZEROTIER_NETWORK_ID" >> /etc/scw-env
