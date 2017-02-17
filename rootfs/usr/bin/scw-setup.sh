@@ -110,9 +110,9 @@ then
   # otherwise fallback to `false
   if [[ $KUBERNETES_MASTER_SCHEDULABLE == "true" ]]
   then
-    echo "KUBERNETES_REGISTER_SCHEDULABLE=true" >> /etc/scw-enc
+    echo "KUBERNETES_REGISTER_SCHEDULABLE=true" >> /etc/scw-env
   else
-    echo "KUBERNETES_REGISTER_SCHEDULABLE=false" >> /etc/scw-enc
+    echo "KUBERNETES_REGISTER_SCHEDULABLE=false" >> /etc/scw-env
   fi
 elif [[ $KUBERNETES_ROLE == "worker" ]]
 then
@@ -120,7 +120,7 @@ then
   touch /tmp/scw-needs-kubelet-service
 
   # schedule pods on workers
-  echo "KUBERNETES_REGISTER_SCHEDULABLE=true" >> /etc/scw-enc
+  echo "KUBERNETES_REGISTER_SCHEDULABLE=true" >> /etc/scw-env
 fi
 
 ZEROTIER_NETWORK_ID=$(scw-server-tags | grep -Po '^zerotier:join:\K(.*)$')
