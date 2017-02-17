@@ -1,5 +1,7 @@
 #!/bin/bash
 
+rm -rf /etc/scw-env
+
 SCW_HOSTNAME=$(scw-metadata | grep -Po '^HOSTNAME=\K(.*)$')
 SCW_ID=$(scw-metadata | grep -Po '^ID=\K(.*)$')
 SCW_DNSNAME_PRIVATE="$SCW_ID.priv.cloud.scaleway.com"
