@@ -9,8 +9,8 @@ spec:
     - /hyperkube
     - controller-manager
     - --master=127.0.0.1:8080
-    - --service-account-private-key-file=/etc/kubernetes/apiserver-key.pem
-    - --root-ca-file=/etc/kubernetes/ca.pem
+    - --service-account-private-key-file=/etc/kubernetes/pki/apiserver-key.pem
+    - --root-ca-file=/etc/kubernetes/pki/ca.pem
     - --leader-elect=true
     - --logtostderr=true
     livenessProbe:
