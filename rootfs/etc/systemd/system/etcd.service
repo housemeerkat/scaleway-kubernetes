@@ -3,7 +3,10 @@ Description=etcd
 Requires=scw-setup.service
 Wants=network.target network-online.target scw-setup.service early-docker.service
 After=network.target network-online.target scw-setup.service early-docker.service
-ConditionPathExists=/etc/scw-needs-etcd-service
+
+# scw-setup checks, whether this node actually needs etcd.
+# if etcd is neeed scw-setup will touch the following file.
+ConditionPathExists=/tmp/scw-needs-etcd-service
 
 [Service]
 EnvironmentFile=-/etc/scw-env

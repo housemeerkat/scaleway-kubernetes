@@ -57,7 +57,7 @@ then
   echo "ETCD_IS_PROXY=on" >>/etc/scw-env
 
   # request that we actually launch etcd.service
-  touch /etc/scw-needs-etcd-service
+  touch /tmp/scw-needs-etcd-service
 else
   echo "ETCD_IS_PROXY=off" >>/etc/scw-env
 fi
@@ -68,7 +68,7 @@ then
   echo "ETCD_IS_PEER=true" >>/etc/scw-env
 
   # request that we actually launch etcd.service
-  touch /etc/scw-needs-etcd-service
+  touch /tmp/scw-needs-etcd-service
 else
   echo "ETCD_IS_PEER=false" >>/etc/scw-env
 fi
