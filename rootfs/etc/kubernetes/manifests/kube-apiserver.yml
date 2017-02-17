@@ -13,18 +13,17 @@ spec:
     - apiserver
     - --admission-control=NamespaceLifecycle,NamespaceExists,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota
     - --allow-privileged=true
-    - --basic-auth-file=/etc/kubernetes/basic_auth.csv
     - --bind-address=0.0.0.0
     - --etcd-servers=http://127.0.0.1:2379
-    - --client-ca-file=/etc/kubernetes/ca.pem
+    - --client-ca-file=/etc/kubernetes/pki/ca.pem
     - --logtostderr=true
     - --secure-port=443
-    - --service-account-key-file=/etc/kubernetes/apiserver-key.pem
+    - --service-account-key-file=/etc/kubernetes/pki/apiserver-key.pem
     - --service-cluster-ip-range=172.16.0.0/12
     - --storage-backend=etcd3
-    - --tls-cert-file=/etc/kubernetes/apiserver.pem
-    - --tls-private-key-file=/etc/kubernetes/apiserver-key.pem
-    - --token-auth-file=/etc/kubernetes/known_tokens.csv
+    - --tls-cert-file=/etc/kubernetes/pki/apiserver.pem
+    - --tls-private-key-file=/etc/kubernetes/pki/apiserver-key.pem
+    - --token-auth-file=/etc/kubernetes/pki/tokens.csv
     ports:
     - containerPort: 443
       hostPort: 443
