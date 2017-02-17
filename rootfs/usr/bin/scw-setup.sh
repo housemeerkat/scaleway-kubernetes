@@ -1,6 +1,8 @@
 #!/bin/bash
 
-rm -rf /etc/scw-env
+rm -f /etc/scw-env
+rm -f /tmp/scw-needs-etcd-service
+rm -f /tmp/scw-needs-kubelet-service
 
 SCW_HOSTNAME=$(scw-metadata | grep -Po '^HOSTNAME=\K(.*)$')
 SCW_ID=$(scw-metadata | grep -Po '^ID=\K(.*)$')
