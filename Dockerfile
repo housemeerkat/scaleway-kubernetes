@@ -51,6 +51,11 @@ RUN systemctl disable docker \
     && systemctl enable early-docker \
     && systemctl enable etcd
 
+# Force new machine-ids for every new image.
+# Otherwise you might get ARP problems with duplicate mac addresses on the
+# same host.
+RUN rm -f /etc/machine-id /var/lib/dbus/machine-id
+
 # Clean rootfs from image-builder.
 #   Revert the builder-enter script
 RUN /usr/local/sbin/builder-leave
