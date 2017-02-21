@@ -108,6 +108,10 @@ then
   # request that we actually launch kubectl.service
   touch /tmp/scw-needs-kubelet-service
 
+  # copy the required yml files to /etc/kubernetes, so kubelet picks them up
+  mkdir -p /etc/kubernetes/manifests
+  cp -a /etc/kubernetes/manifests-master/* /etc/kubernetes/manifests
+
   # check, whether we explicly requested scheduling on master
   # otherwise fallback to `false
   if [[ $KUBERNETES_MASTER_SCHEDULABLE == "true" ]]
@@ -123,6 +127,33 @@ then
 
   # schedule pods on workers
   echo "KUBERNETES_REGISTER_SCHEDULABLE=true" >> /etc/scw-env
+fi
+
+# check, whether we need a valid kubeconfig
+if [ -f "/tmp/scw-needs-kubelet-service" ]
+then
+  # make sure kubelet directory exists
+  mkdir -p /var/lib/kubelet
+
+  # create kubeconfig with certs
+  cat << EOF > /var/lib/kubelet/kubeconfig
+apiVersion: v1
+kind: Config
+clusters:
+- name: local
+  cluster:
+    certificate-authority: /etc/kubernetes/pki/ca.pem
+contexts:
+- context:
+    cluster: local
+    user: kubelet
+users:
+- name: kubelet
+  user:
+    client-certificate: /etc/kubernetes/pki/apiserver.pem
+    client-key: /etc/kubernetes/pki/apiserver-key.pem
+EOF
+
 fi
 
 ZEROTIER_NETWORK_ID=$(scw-server-tags | grep -Po '^zerotier:join:\K(.*)$')
