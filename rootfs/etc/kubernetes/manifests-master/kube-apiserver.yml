@@ -13,11 +13,13 @@ spec:
     - apiserver
     - --admission-control=NamespaceLifecycle,NamespaceExists,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota
     - --allow-privileged=true
+    - --anonymous-auth=false
     - --basic-auth-file=/etc/kubernetes/pki/basic_auth.csv
     - --bind-address=0.0.0.0
     - --client-ca-file=/etc/kubernetes/pki/ca.pem
     - --etcd-servers=http://127.0.0.1:2379
     - --logtostderr=true
+    - --runtime-config=extensions/v1beta1/networkpolicies=true
     - --secure-port=443
     - --service-account-key-file=/etc/kubernetes/pki/apiserver-key.pem
     - --service-cluster-ip-range=172.16.0.0/16
