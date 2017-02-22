@@ -12,6 +12,8 @@ FROM scaleway/ubuntu:amd64-xenial
 RUN /usr/local/sbin/builder-enter
 
 RUN curl -s https://raw.githubusercontent.com/zerotier/ZeroTierOne/master/doc/contact%40zerotier.com.gpg | apt-key add -
+RUN  curl -fsSL https://apt.dockerproject.org/gpg | apt-key add -
+
 
 # Install docker dependencies & upgrade system
 RUN apt-get -q update \
@@ -19,6 +21,7 @@ RUN apt-get -q update \
         && apt-get install -y -q \
         software-properties-common \
         && add-apt-repository 'deb http://download.zerotier.com/debian/xenial xenial main' \
+        && add-apt-repository 'deb http://apt.dockerproject.org/repo ubuntu-xenial main' \
         && apt-get -q update \
         && apt-get install -y -q \
         apparmor \
@@ -27,18 +30,17 @@ RUN apt-get -q update \
         btrfs-tools \
         bridge-utils \
         cgroupfs-mount \
+        docker-engine=1.12.6-0~ubuntu-xenial \
         jq \
         git \
         ifupdown \
         kmod \
         lxc \
         python-setuptools \
+        ufw \
         vlan \
         zerotier-one \
         && apt-get clean
-
-# Install docker
-RUN curl -L https://get.docker.com/ | sh
 
 # Add local files into the root (extra config etc)
 COPY ./rootfs/ /
