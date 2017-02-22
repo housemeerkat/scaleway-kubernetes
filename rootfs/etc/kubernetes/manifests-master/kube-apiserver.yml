@@ -19,7 +19,7 @@ spec:
     - --client-ca-file=/etc/kubernetes/pki/ca.pem
     - --etcd-servers=http://127.0.0.1:2379
     - --logtostderr=true
-    - --runtime-config=extensions/v1beta1/networkpolicies=true
+    - --runtime-config=extensions/v1beta1=true,extensions/v1beta1/networkpolicies=true
     - --secure-port=443
     - --service-account-key-file=/etc/kubernetes/pki/apiserver-key.pem
     - --service-cluster-ip-range=172.16.0.0/16
