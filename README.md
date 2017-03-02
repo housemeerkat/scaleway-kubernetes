@@ -73,38 +73,35 @@ You can attach to a zerotier.conf network.
 zerotier:join:MY_ZEROTIER_NETWORK_ID
 ```
 
+### Build new image on Scaleway
 
+- Create new ImageBuilder instance on Scaleway with an **additional** 50GB
+  volume
+- Launch instance
 
-Due to the limited configuration parameters with Scaleway, it is required that you build your own image with Kubernetes certificates baked into your image. Because of this, setup is slightly more complex than I'd like it to be.
+```
+# login to your Scaleway Imagebuilder instance
+ssh imagebuilder
 
-1. Spin-up an image builder instance on scaleway, and clone this repository onto it:
+# checkout this repo
+git clone https://github.com/iosphere/scaleway-kubernetes.git
 
-```bash
-$ git clone https://github.com/munnerz/scaleway-k8s.git
+# Goto directory
+cd scaleway-kubernetes
+
+# Show make targets
+make
+
+# Make local image on additional 50gb volume
+make install_on_disk
+
+# Copy image to your private Scaleway image registry
+make image_on_local
+
+# Logout
+exit
 ```
 
-2. Place your keys, certificate, cluster CA and auth files into rootfs/etc/kubernetes:
 
-* `apiserver-key.pem`: the apiserver private key
-* `apiserver.pem`: the api server certificate
-* `basic_auth.csv`: basic auth accounts
-* `ca.pem`: the cluster CA certificate
-* `known_tokens.csv`: token auth accounts
 
-You can generate the openssl certificates using the CoreOS guide: https://coreos.com/kubernetes/docs/latest/openssl.html
 
-3. Run `make install` - this by default will write everything needed to the volume attached to your builder instance at `/dev/nbd1`. To change the volume name, set the `DISK` environment variables (eg. `DISK=/dev/vdb make install`)
-
-4. Shut down your builder instance and snapshot the attached disk. You can then create an image from this snapshot and then a new VM from your new image.
-
-5. When creating the new servers, make sure to select the `docker` boot script.
-
-6. If you start a new cluster you need an etcd discovery link as start point. You can get one at https://discovery.etcd.io/new?size=3 (adjust the `size` parameter according to how many etcd nodes you will initially have in your cluster)
-
-7. Add your discover link as a tag to your server in format discover:https://discovery.etcd.io/secretkeyyougot. Make sure it is the first tag!
-
-8. Set a second tag with your Scaleway access key and token in format api:accesskey:token.
-
-Repeat steps 5-8 for each instance that should be in your etcd cluster.
-
-The cluster will take a few minutes to properly come online.
