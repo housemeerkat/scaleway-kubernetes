@@ -85,7 +85,7 @@ curl --silent \
   --fail \
   -H "X-Auth-Token: ${SCW_TOKEN}" \
   -H 'Content-Type: application/json' \
-  https://cp-par1.scaleway.com/servers | jq '[.servers[] | select((.tags[] | contains("kubernetes:role:master")) and (.tags[] | contains("kubernetes:clustername:'$KUBERNETES_CLUSTERNAME'"))) | ["https://\(.id).priv.cloud.scaleway.com"]] | add | unique | join(",")'
+  https://cp-par1.scaleway.com/servers | jq '[.servers[] | select((.tags[] | contains("kubernetes:role:master")) and (.tags[] | contains("kubernetes:clustername:'$KUBERNETES_CLUSTERNAME'"))) | ["https://\(.id).priv.cloud.scaleway.com:6443"]] | add | unique | join(",")'
 )
 KUBERNETES_ROLE=$(scw-server-tags | grep -Po '^kubernetes:role:\K(.*)$')
 
