@@ -20,7 +20,7 @@ spec:
     - --etcd-servers=http://127.0.0.1:2379
     - --logtostderr=true
     - --runtime-config=extensions/v1beta1=true,extensions/v1beta1/networkpolicies=true
-    - --secure-port=443
+    - --secure-port=6443
     - --service-account-key-file=/etc/kubernetes/pki/apiserver-key.pem
     - --service-cluster-ip-range=172.16.0.0/16
     - --storage-backend=etcd3
@@ -28,7 +28,7 @@ spec:
     - --tls-private-key-file=/etc/kubernetes/pki/apiserver-key.pem
     - --token-auth-file=/etc/kubernetes/pki/tokens.csv
     ports:
-    - containerPort: 443
+    - containerPort: 6443
       hostPort: 6443
       name: https
     - containerPort: 7080
