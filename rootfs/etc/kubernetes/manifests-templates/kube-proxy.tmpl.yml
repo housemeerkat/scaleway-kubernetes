@@ -11,15 +11,29 @@ spec:
     command:
     - /hyperkube
     - proxy
-    - --master=http://127.0.0.1:8080
+    - --master=KUBERNETES_MASTER_URL
+    - --kubeconfig=/var/lib/kubelet/kubeconfig
     - --proxy-mode=iptables
     securityContext:
       privileged: true
     volumeMounts:
+    - mountPath: /etc/kubernetes/
+      name: etckube
+      readOnly: true
     - mountPath: /etc/ssl/
       name: etcssl
       readOnly: true
+    - mountPath: /var/lib/kubelet/
+      name: kubeconfig
+      readOnly: true
   volumes:
+  - hostPath:
+      path: /etc/kubernetes
+    name: etckube
   - hostPath:
       path: /etc/ssl
     name: etcssl
+  - hostPath:
+      path: /var/lib/kubelet
+    name: kubeconfig
+

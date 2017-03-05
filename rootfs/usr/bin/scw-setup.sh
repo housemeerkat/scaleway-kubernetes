@@ -13,8 +13,17 @@ SCW_IPV4_PUBLIC=$(scw-metadata | grep -Po '^PUBLIC_IP_ADDRESS=\K(.*)$')
 SCW_IPV6_ADDRESS=$(scw-metadata | grep -Po '^PIPV6_ADDRESS=\K(.*)$')
 SCW_IPV6_GATEWAY=$(scw-metadata | grep -Po '^PIPV6_GATEWAY=\K(.*)$')
 SCW_IPV6_NETMASK=$(scw-metadata | grep -Po '^PIPV6_NETMASK=\K(.*)$')
+SCW_LOCATION_CLUSTER_ID=$(scw-metadata | grep -Po '^LOCATION_CLUSTER_ID=\K(.*)$')
+SCW_LOCATION_HYPERVISOR_ID=$(scw-metadata | grep -Po '^LOCATION_HYPERVISOR_ID=\K(.*)$')
+SCW_LOCATION_NODE_ID=$(scw-metadata | grep -Po '^LOCATION_NODE_ID=\K(.*)$')
+SCW_LOCATION_PLATFORM_ID=$(scw-metadata | grep -Po '^LOCATION_PLATFORM_ID=\K(.*)$')
+SCW_LOCATION_ZONE_ID=$(scw-metadata | grep -Po '^LOCATION_ZONE_ID=\K(.*)$')
 SCW_MODEL=$(scw-metadata | grep -Po '^COMMERCIAL_TYPE=\K(.*)$')
+SCW_REGION=$SCW_LOCATION_ZONE_ID
+SCW_API_ENDPOINT="https://cp-${SCW_REGION}.scaleway.com/servers"
 SCW_TOKEN=$(scw-server-tags | grep -Po '^scaleway:token:\K(.*)$')
+
+
 echo "SCW_ID=$SCW_ID" >>/etc/scw-env
 echo "SCW_HOSTNAME=$SCW_HOSTNAME" >>/etc/scw-env
 echo "SCW_DNSNAME_PRIVATE=$SCW_DNSNAME_PRIVATE" >>/etc/scw-env
@@ -25,6 +34,7 @@ echo "SCW_IPV6_ADDRESS=$SCW_IPV6_ADDRESS" >>/etc/scw-env
 echo "SCW_IPV6_GATEWAY=$SCW_IPV6_GATEWAY" >>/etc/scw-env
 echo "SCW_IPV6_NETMASK=$SCW_IPV6_NETMASK" >>/etc/scw-env
 echo "SCW_MODEL=$SCW_MODEL" >>/etc/scw-env
+echo "SCW_REGION=$SCW_REGION" >> /etc/scw-env
 echo "SCW_TOKEN=$SCW_TOKEN" >>/etc/scw-env
 
 ETCD_CLUSTERNAME=$(scw-server-tags | grep -Po '^etcd:clustername:\K(.*)$')
@@ -38,7 +48,7 @@ curl --silent \
   --fail \
   -H "X-Auth-Token: ${SCW_TOKEN}" \
   -H 'Content-Type: application/json' \
-  https://cp-par1.scaleway.com/servers | jq '[.servers[] | select((.tags[] | contains("etcd:ispeer:true")) and (.tags[] | contains("etcd:clustername:'$ETCD_CLUSTERNAME'"))) | ["\(.id).priv.cloud.scaleway.com"]] | add | unique | join(",")'
+  $SCW_API_ENDPOINT | jq '[.servers[] | select((.tags[] | contains("etcd:ispeer:true")) and (.tags[] | contains("etcd:clustername:'$ETCD_CLUSTERNAME'"))) | ["\(.id).priv.cloud.scaleway.com"]] | add | unique | join(",")'
 )
 
 echo "ETCD_CLUSTERNAME=$ETCD_CLUSTERNAME" >>/etc/scw-env
@@ -77,26 +87,37 @@ else
   echo "ETCD_IS_PEER=false" >>/etc/scw-env
 fi
 
-KUBERNETES_CLUSTERNAME=$(scw-server-tags | grep -Po '^kubernetes:clustername:\K(.*)$')
 # query the Scaleway API and find all `kubernetes:role:master` belonging to this KUBERNETES_CLUSTERNAME
+KUBERNETES_CLUSTERNAME=$(scw-server-tags | grep -Po '^kubernetes:clustername:\K(.*)$')
 KUBERNETES_HOSTNAME=$SCW_IPV4_PRIVATE
-KUBERNETES_MASTERS=$(
+
+# join all private master dns entries
+KUBERNETES_MASTERS_PRIVATE=$(
 curl --silent \
   --fail \
   -H "X-Auth-Token: ${SCW_TOKEN}" \
   -H 'Content-Type: application/json' \
-  https://cp-par1.scaleway.com/servers | jq '[.servers[] | select((.tags[] | contains("kubernetes:role:master")) and (.tags[] | contains("kubernetes:clustername:'$KUBERNETES_CLUSTERNAME'"))) | ["https://\(.id).priv.cloud.scaleway.com:443"]] | add | unique | join(",")'
+  $SCW_API_ENDPOINT | jq '[.servers[] | select((.tags[] | contains("kubernetes:role:master")) and (.tags[] | contains("kubernetes:clustername:'$KUBERNETES_CLUSTERNAME'"))) | ["https://\(.id).priv.cloud.scaleway.com:6443"]] | add | unique | join(",")'
 )
 KUBERNETES_ROLE=$(scw-server-tags | grep -Po '^kubernetes:role:\K(.*)$')
 
 # convert `;` to `,`
 # kubernetes need comma, Scaleway needs semicolon `;`
 KUBERNETES_NODE_TAGS=$(scw-server-tags | grep -Po '^kubernetes:nodetags:\K(.*)$' | sed -e 's#;#,#')
-KUBERNETES_NODE_LABELS="role=${KUBERNETES_ROLE},scwmodel=${SCW_MODEL},${KUBERNETES_NODE_TAGS}"
+
+# add kubernetes specific labels
+KUBERNETES_NODE_LABELS="role=${KUBERNETES_ROLE},${KUBERNETES_NODE_TAGS}"
+# add scaleway specify labels
+KUBERNETES_NODE_LABELS="scwclusterid=${SCW_LOCATION_CLUSTER_ID},${KUBERNETES_NODE_LABELS}"
+KUBERNETES_NODE_LABELS="scwhypervisorid=${SCW_LOCATION_HYPERVISOR_ID},${KUBERNETES_NODE_LABELS}"
+KUBERNETES_NODE_LABELS="scwmodel=${SCW_MODEL},${KUBERNETES_NODE_LABELS}"
+KUBERNETES_NODE_LABELS="scwnodeid=${SCW_LOCATION_NODE_ID},${KUBERNETES_NODE_LABELS}"
+KUBERNETES_NODE_LABELS="scwplatformid=${SCW_LOCATION_PLATFORM_ID},${KUBERNETES_NODE_LABELS}"
+KUBERNETES_NODE_LABELS="scwzoneid=${SCW_LOCATION_ZONE_ID},${KUBERNETES_NODE_LABELS}"
 KUBERNETES_MASTER_SCHEDULABLE=$(scw-server-tags | grep -Po '^kubernetes:master:schedulable:\K(.*)$')
 echo "KUBERNETES_CLUSTERNAME=$KUBERNETES_CLUSTERNAME" >> /etc/scw-env
 echo "KUBERNETES_HOSTNAME=$KUBERNETES_HOSTNAME" >> /etc/scw-env
-echo "KUBERNETES_MASTERS=$KUBERNETES_MASTERS" >> /etc/scw-env
+echo "KUBERNETES_MASTERS_PRIVATE=$KUBERNETES_MASTERS_PRIVATE" >> /etc/scw-env
 echo "KUBERNETES_NODE_LABELS=$KUBERNETES_NODE_LABELS" >> /etc/scw-env
 echo "KUBERNETES_NODE_TAGS=$KUBERNETES_NODE_TAGS" >> /etc/scw-env
 echo "KUBERNETES_ROLE=$KUBERNETES_ROLE" >> /etc/scw-env
@@ -111,6 +132,9 @@ then
   # copy the required yml files to /etc/kubernetes, so kubelet picks them up
   mkdir -p /etc/kubernetes/manifests
   cp -a /etc/kubernetes/manifests-master/* /etc/kubernetes/manifests
+
+  # we are the master itself. Proxy localhost.
+  sed -e 's#KUBERNETES_MASTER_URL#http://127.0.0.1:8080#' /etc/kubernetes/manifests-templates/kube-proxy.tmpl.yml > /etc/kubernetes/manifests/kube-proxy.yml
 
   # check, whether we explicly requested scheduling on master
   # otherwise fallback to `false
@@ -127,6 +151,12 @@ then
 
   # schedule pods on workers
   echo "KUBERNETES_REGISTER_SCHEDULABLE=true" >> /etc/scw-env
+
+  # setup the kube-proxy to talk to the master
+  mkdir -p /etc/kubernetes/manifests
+  # use the kubernetes service to reach the master
+  # the kubernetes service IP is the first IP from the service-ip-range
+  sed -e 's#KUBERNETES_MASTER_URL#https://172.16.0.1:443#' /etc/kubernetes/manifests-templates/kube-proxy.tmpl.yml > /etc/kubernetes/manifests/kube-proxy.yml
 fi
 
 # check, whether we need a valid kubeconfig
@@ -150,8 +180,8 @@ contexts:
 users:
 - name: kubelet
   user:
-    client-certificate: /etc/kubernetes/pki/apiserver.pem
-    client-key: /etc/kubernetes/pki/apiserver-key.pem
+    client-certificate: /etc/kubernetes/pki/client.pem
+    client-key: /etc/kubernetes/pki/client-key.pem
 EOF
 
 fi
