@@ -159,8 +159,7 @@ then
 
   # we are the master itself. Proxy localhost.
   sed -e 's#KUBERNETES_PROXY_HOSTNAME#'$KUBERNETES_PROXY_HOSTNAME'#' \
-      -e 's#KUBERNETES_MASTER_URL#http://127.0.0.1:8080#'
-  /etc/kubernetes/manifests-templates/kube-proxy.tmpl.yml > /etc/kubernetes/manifests/kube-proxy.yml
+      -e 's#KUBERNETES_MASTER_URL#http://127.0.0.1:8080#' /etc/kubernetes/manifests-templates/kube-proxy.tmpl.yml > /etc/kubernetes/manifests/kube-proxy.yml
 
   # check, whether we explicly requested scheduling on master
   # otherwise fallback to `false
