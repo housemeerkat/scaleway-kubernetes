@@ -99,6 +99,15 @@ curl --silent \
   -H 'Content-Type: application/json' \
   $SCW_API_ENDPOINT | jq '[.servers[] | select((.tags[] | contains("kubernetes:role:master")) and (.tags[] | contains("kubernetes:clustername:'$KUBERNETES_CLUSTERNAME'"))) | ["https://\(.id).priv.cloud.scaleway.com:6443"]] | add | unique | join(",")'
 )
+
+# used as a fallback, if kubernetes:master:url is missing
+KUBERNETES_FIRST_MASTER=$(
+curl --silent \
+  --fail \
+  -H "X-Auth-Token: ${SCW_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  $SCW_API_ENDPOINT | jq '[.servers[] | select((.tags[] | contains("kubernetes:role:master")) and (.tags[] | contains("kubernetes:clustername:'$KUBERNETES_CLUSTERNAME'"))) | ["https://\(.id).priv.cloud.scaleway.com:6443"]][0] | join(",")' | tr -d '"'
+)
 KUBERNETES_ROLE=$(scw-server-tags | grep -Po '^kubernetes:role:\K(.*)$')
 
 # convert `;` to `,`
@@ -115,6 +124,21 @@ KUBERNETES_NODE_LABELS="scwnodeid=${SCW_LOCATION_NODE_ID},${KUBERNETES_NODE_LABE
 KUBERNETES_NODE_LABELS="scwplatformid=${SCW_LOCATION_PLATFORM_ID},${KUBERNETES_NODE_LABELS}"
 KUBERNETES_NODE_LABELS="scwzoneid=${SCW_LOCATION_ZONE_ID},${KUBERNETES_NODE_LABELS}"
 KUBERNETES_MASTER_SCHEDULABLE=$(scw-server-tags | grep -Po '^kubernetes:master:schedulable:\K(.*)$')
+
+# try to get the master url from server tags. The master url should be a load-balanced url containing
+# all master api servers.
+# if this is not set, fallback to the first master url we can find.
+# but be aware. If the first master url fails, the proxy will not work.
+KUBERNETES_MASTER_URL=$(scw-server-tags | grep -Po '^kubernetes:master:url:\K(.*)$')
+if [[ $KUBERNETES_MASTER_URL == "" ]]
+then
+  # fallback to first master
+  KUBERNETES_MASTER_URL=$KUBERNETES_FIRST_MASTER
+fi
+
+
+# use the private IP as hostname
+KUBERNETES_PROXY_HOSTNAME=$SCW_IPV4_PRIVATE
 echo "KUBERNETES_CLUSTERNAME=$KUBERNETES_CLUSTERNAME" >> /etc/scw-env
 echo "KUBERNETES_HOSTNAME=$KUBERNETES_HOSTNAME" >> /etc/scw-env
 echo "KUBERNETES_MASTERS_PRIVATE=$KUBERNETES_MASTERS_PRIVATE" >> /etc/scw-env
@@ -134,7 +158,9 @@ then
   cp -a /etc/kubernetes/manifests-master/* /etc/kubernetes/manifests
 
   # we are the master itself. Proxy localhost.
-  sed -e 's#KUBERNETES_MASTER_URL#http://127.0.0.1:8080#' /etc/kubernetes/manifests-templates/kube-proxy.tmpl.yml > /etc/kubernetes/manifests/kube-proxy.yml
+  sed -e 's#KUBERNETES_PROXY_HOSTNAME#'$KUBERNETES_PROXY_HOSTNAME'#' \
+      -e 's#KUBERNETES_MASTER_URL#http://127.0.0.1:8080#'
+  /etc/kubernetes/manifests-templates/kube-proxy.tmpl.yml > /etc/kubernetes/manifests/kube-proxy.yml
 
   # check, whether we explicly requested scheduling on master
   # otherwise fallback to `false
@@ -154,9 +180,11 @@ then
 
   # setup the kube-proxy to talk to the master
   mkdir -p /etc/kubernetes/manifests
-  # use the kubernetes service to reach the master
+
+  # use the kubernetes master url to reach the service. The master url should be load-balanced in the best case
   # the kubernetes service IP is the first IP from the service-ip-range
-  sed -e 's#KUBERNETES_MASTER_URL#https://172.16.0.1:443#' /etc/kubernetes/manifests-templates/kube-proxy.tmpl.yml > /etc/kubernetes/manifests/kube-proxy.yml
+  sed -e 's#KUBERNETES_PROXY_HOSTNAME#'$KUBERNETES_PROXY_HOSTNAME'#' \
+      -e 's#KUBERNETES_MASTER_URL#'$KUBERNETES_MASTER_URL'#' /etc/kubernetes/manifests-templates/kube-proxy.tmpl.yml > /etc/kubernetes/manifests/kube-proxy.yml
 fi
 
 # check, whether we need a valid kubeconfig

@@ -11,7 +11,9 @@ spec:
     command:
     - /hyperkube
     - proxy
+    - --cluster-cidr=172.20.0.0/16
     - --master=KUBERNETES_MASTER_URL
+    - --hostname-override=KUBERNETES_PROXY_HOSTNAME
     - --kubeconfig=/var/lib/kubelet/kubeconfig
     - --proxy-mode=iptables
     securityContext:

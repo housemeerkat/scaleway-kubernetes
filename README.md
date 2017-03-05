@@ -55,6 +55,12 @@ be used to lauch a kubernetes master or worker.
 // This is the case for all nodes (master/worker), where `kubelet` is installed
 kubernetes:clustername:MY_KUBERNETES_CLUSTER_NAME
 
+// specify a load-balanced URL, which contains all DNS names for master-nodes
+// fallback is the first master-url, which can be autodiscovered.
+// This can be done afterwards. Put all master-nodes into a Route53 DNS with
+// multiple A records
+kubernetes:master:url:LOAD_BALANCED_URL_OF_APISERVER
+
 // Node labels you want to attach to a `kubelet`.
 kubernetes:nodetags:KEY0=VALUE0,KEY1=VALUE1
 
