@@ -112,9 +112,10 @@ KUBERNETES_ROLE=$(scw-server-tags | grep -Po '^kubernetes:role:\K(.*)$')
 
 # convert `;` to `,`
 # kubernetes need comma `,` Scaleway needs semicolon `;`
-# scw-server-tags does not parse the semilicolon `;` correclty
-# and add a `'` in front. Remove this here in the grep part.
-KUBERNETES_NODE_TAGS=$(scw-server-tags | grep -Po "^\'?kubernetes:nodetags:\K(.*)$" | sed -e 's#;#,#')
+# scw-server-tags trims after each '='. Since we want to have `=` for Kubernetes Node tags as well,
+# we talk to the metadata service directory and duplicate the behaviour of `scw-server-tags
+KUBERNETES_NODE_TAGS=$(scw-metadata --cached | grep "^TAGS_" | sed -E "s#^TAGS_[0-9]+\=##" | grep -Po "'\K(.[^\'?]*)" | grep -Po "kubernetes:nodetags:\K(.*)$" | sed -e 's#;#,#')
+scw-metadata --cached | grep "^TAGS_" | sed -E "s#^TAGS_[0-9]+\=##"
 
 # add kubernetes specific labels
 KUBERNETES_NODE_LABELS="role=${KUBERNETES_ROLE},${KUBERNETES_NODE_TAGS}"
