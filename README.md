@@ -68,11 +68,14 @@ kubernetes:nodetags:KEY0=VALUE0,KEY1=VALUE1
 kubernetes:role:master
 ```
 
-##### ZEROTIER
+##### ZEROTIER (jump-host)
 
-You can attach to a zerotier.conf network.
+Zerotier.com is a SDN, which can be used to form a private network across
+datacenter boundaries.
+This could be used as a jump-host/bastion-host to get into the Scaleway network.
+(unused)
 
-```
+```sh
 // If a zerotier-network-id is set, the image tries
 // to attach to the zerotier-network.
 // You will get a new network interface `zt0`
