@@ -16,8 +16,7 @@ ExecStart = /usr/bin/docker run \
         --net=host \
         -v /var/lib/etcd:/var/lib/etcd \
         -v /etc/ssl:/etc/ssl:ro \
-        -v /etc/etcd:/etc/etcd:ro \
-        quay.io/coreos/etcd:v3.1.2 \
+        quay.io/coreos/etcd:v3.1.4 \
          etcd \
          --data-dir=/var/lib/etcd \
          --name="${ETCD_NAME_NODE}" \
@@ -26,12 +25,7 @@ ExecStart = /usr/bin/docker run \
          --listen-client-urls="${ETCD_LISTEN_CLIENT_URLS}" \
          --advertise-client-urls="${ETCD_ADVERTISE_CLIENT_URLS}" \
          --initial-advertise-peer-urls="${ETCD_INITIAL_ADVERTISE_PEER_URLS}" \
-         --trusted-ca-file=/etc/etcd/ca.pem --client-cert-auth \
-         --cert-file=/etc/etcd/client.pem \
-         --key-file=/etc/etcd/client-key.pem \
-         --peer-trusted-ca-file=/etc/etcd/ca.pem --peer-client-cert-auth \
-         --peer-cert-file=/etc/etcd/peer.pem \
-         --peer-key-file=/etc/etcd/peer-key.pem
+         --auto-tls --peer-auto-tls
 
 Restart=always
 RestartSec=10s

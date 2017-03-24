@@ -93,10 +93,18 @@ zerotier:join:MY_ZEROTIER_NETWORK_ID
 ssh imagebuilder
 
 # checkout this repo
-git clone https://github.com/iosphere/scaleway-kubernetes.git
+git clone https://github.com/housemeerkat/scaleway-kubernetes.git
 
 # Goto directory
 cd scaleway-kubernetes
+
+# checkou branch
+
+git checkout feature/1.5.5
+
+# SSH Key gen for image upload
+
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
 
 # Show make targets
 make
@@ -111,6 +119,19 @@ make image_on_local
 exit
 ```
 
+TODO after: 
+
+ETCD is comunicatinng with self signed certs --auto-tls from 1.5.5 /1.5.3 you need to provide certs.
+
+K8s certificates -> you need them: 
+```
+/etc/kubernetes/pki/ca.pem
+/etc/kubernetes/pki/apiserver-key.pem
+/etc/kubernetes/pki/apiserver.pem
+
+/etc/kubernetes/pki/client-key.pem
+/etc/kubernetes/pki/client.pem
+```
 
 
 

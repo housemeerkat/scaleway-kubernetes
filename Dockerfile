@@ -12,7 +12,7 @@ FROM scaleway/ubuntu:amd64-xenial
 RUN /usr/local/sbin/builder-enter
 
 RUN curl -s https://raw.githubusercontent.com/zerotier/ZeroTierOne/master/doc/contact%40zerotier.com.gpg | apt-key add -
-RUN  curl -fsSL https://apt.dockerproject.org/gpg | apt-key add -
+RUN  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 
 
 # Install docker dependencies & upgrade system
@@ -20,8 +20,9 @@ RUN apt-get -q update \
         && apt-get -y -qq upgrade \
         && apt-get install -y -q \
         software-properties-common \
+        apt-transport-https \
         && add-apt-repository 'deb http://download.zerotier.com/debian/xenial xenial main' \
-        && add-apt-repository 'deb http://apt.dockerproject.org/repo ubuntu-xenial main' \
+        && add-apt-repository 'deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable' \
         && apt-get -q update \
         && apt-get install -y -q \
         apparmor \
@@ -30,7 +31,7 @@ RUN apt-get -q update \
         btrfs-tools \
         bridge-utils \
         cgroupfs-mount \
-        docker-engine=1.12.6-0~ubuntu-xenial \
+        docker-ce \
         jq \
         git \
         ifupdown \
@@ -44,7 +45,7 @@ RUN apt-get -q update \
 
 # Install CNI plugins for kubelet cni mode
 RUN mkdir -p /opt/cni/bin \
-    && curl -fsSL 'https://github.com/containernetworking/cni/releases/download/v0.4.0/cni-amd64-v0.4.0.tgz' | tar xvz -C /opt/cni/bin/
+    && curl -fsSL 'https://github.com/containernetworking/cni/releases/download/v0.5.1/cni-amd64-v0.5.1.tgz' | tar xvz -C /opt/cni/bin/
 
 
 # Add local files into the root (extra config etc)
