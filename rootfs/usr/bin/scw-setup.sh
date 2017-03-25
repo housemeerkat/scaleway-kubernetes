@@ -64,8 +64,8 @@ echo "ETCD_INITIAL_ADVERTISE_PEER_URLS=https://$SCW_DNSNAME_PRIVATE:2380" >>/etc
 # This must be an IP-Address unless you use DNS-SRV discovery for etcd.
 # Be aware that the private IP will change if you terminate your machine.
 # we allow only localhost apiserver from kubernetes and etcd master have to be on the same machine
-echo "ETCD_LISTEN_CLIENT_URLS=http://127.0.0.1:2379,https://127.0.0.1:2379,https://$SCW_IPV4_PRIVATE:2379" >>/etc/scw-env
 echo "ETCD_LISTEN_CLIENT_URLS=http://127.0.0.1:2379" >>/etc/scw-env
+echo "ETCD_LISTEN_PEER_URLS=https://$SCW_IPV4_PRIVATE:2380" >>/etc/scw-env
 
 # map true/false to proxy config
 if [[ $ETCD_IS_PROXY == "true" ]]
