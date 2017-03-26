@@ -11,8 +11,9 @@ FROM scaleway/ubuntu:amd64-xenial
 #   This script prevent aptitude to run services when installed
 RUN /usr/local/sbin/builder-enter
 
-RUN curl -s https://raw.githubusercontent.com/zerotier/ZeroTierOne/master/doc/contact%40zerotier.com.gpg | apt-key add -
-RUN  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+RUN curl -s https://raw.githubusercontent.com/zerotier/ZeroTierOne/master/doc/contact%40zerotier.com.gpg | apt-key add - \
+  && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - \
+  && curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 
 
 # Install docker dependencies & upgrade system
@@ -25,6 +26,7 @@ RUN apt-get -q update \
         && add-apt-repository 'deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable' \
         && apt-get -q update \
         && apt-get install -y -q \
+        kubectl \
         apparmor \
         arping \
         aufs-tools \
