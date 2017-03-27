@@ -2,7 +2,7 @@
 
 rm -f /etc/scw-env
 rm -f /tmp/scw-needs-etcd-service
-rm -f /tmp/scw-needs-kubelet-service
+rm -f /tmp/scw-needs-kubeadm-service
 
 SCW_HOSTNAME=$(scw-metadata | grep -Po '^HOSTNAME=\K(.*)$')
 SCW_ID=$(scw-metadata | grep -Po '^ID=\K(.*)$')
@@ -89,133 +89,26 @@ else
   echo "ETCD_IS_PEER=false" >>/etc/scw-env
 fi
 
-# query the Scaleway API and find all `kubernetes:role:master` belonging to this KUBERNETES_CLUSTERNAME
-KUBERNETES_CLUSTERNAME=$(scw-server-tags | grep -Po '^kubernetes:clustername:\K(.*)$')
-KUBERNETES_HOSTNAME=$SCW_IPV4_PRIVATE
+KUBEADM_TOKEN=$(scw-server-tags | grep -Po '^kubernetes:kubeadm:token:\K(.*)$')
 
-# join all private master dns entries
-KUBERNETES_MASTERS_PRIVATE=$(
-curl --silent \
-  --fail \
-  -H "X-Auth-Token: ${SCW_TOKEN}" \
-  -H 'Content-Type: application/json' \
-  $SCW_API_ENDPOINT | jq '[.servers[] | select((.tags[] | contains("kubernetes:role:master")) and (.tags[] | contains("kubernetes:clustername:'$KUBERNETES_CLUSTERNAME'"))) | ["https://\(.id).priv.cloud.scaleway.com:6443"]] | add | unique | join(",")'
-)
-
-# used as a fallback, if kubernetes:master:url is missing
-KUBERNETES_FIRST_MASTER=$(
-curl --silent \
-  --fail \
-  -H "X-Auth-Token: ${SCW_TOKEN}" \
-  -H 'Content-Type: application/json' \
-  $SCW_API_ENDPOINT | jq '[.servers[] | select((.tags[] | contains("kubernetes:role:master")) and (.tags[] | contains("kubernetes:clustername:'$KUBERNETES_CLUSTERNAME'"))) | ["https://\(.id).priv.cloud.scaleway.com:6443"]][0] | join(",")' | tr -d '"'
-)
-KUBERNETES_ROLE=$(scw-server-tags | grep -Po '^kubernetes:role:\K(.*)$')
-
-# convert `;` to `,`
-# kubernetes need comma `,` Scaleway needs semicolon `;`
-# scw-server-tags trims after each '='. Since we want to have `=` for Kubernetes Node tags as well,
-# we talk to the metadata service directory and duplicate the behaviour of `scw-server-tags
-KUBERNETES_NODE_TAGS=$(scw-metadata --cached | grep "^TAGS_" | sed -E "s#^TAGS_[0-9]+\=##" | grep -Po "'\K(.[^\'?]*)" | grep -Po "kubernetes:nodetags:\K(.*)$" | sed -e 's#;#,#')
-scw-metadata --cached | grep "^TAGS_" | sed -E "s#^TAGS_[0-9]+\=##"
-
-# add kubernetes specific labels
-KUBERNETES_NODE_LABELS="role=${KUBERNETES_ROLE},${KUBERNETES_NODE_TAGS}"
-# add scaleway specify labels
-KUBERNETES_NODE_LABELS="scwclusterid=${SCW_LOCATION_CLUSTER_ID},${KUBERNETES_NODE_LABELS}"
-KUBERNETES_NODE_LABELS="scwhypervisorid=${SCW_LOCATION_HYPERVISOR_ID},${KUBERNETES_NODE_LABELS}"
-KUBERNETES_NODE_LABELS="scwmodel=${SCW_MODEL},${KUBERNETES_NODE_LABELS}"
-KUBERNETES_NODE_LABELS="scwnodeid=${SCW_LOCATION_NODE_ID},${KUBERNETES_NODE_LABELS}"
-KUBERNETES_NODE_LABELS="scwplatformid=${SCW_LOCATION_PLATFORM_ID},${KUBERNETES_NODE_LABELS}"
-KUBERNETES_NODE_LABELS="scwzoneid=${SCW_LOCATION_ZONE_ID},${KUBERNETES_NODE_LABELS}"
-KUBERNETES_MASTER_SCHEDULABLE=$(scw-server-tags | grep -Po '^kubernetes:master:schedulable:\K(.*)$')
-
-# try to get the master url from server tags. The master url should be a load-balanced url containing
-# all master api servers.
-# if this is not set, fallback to the first master url we can find.
-# but be aware. If the first master url fails, the proxy will not work.
 KUBERNETES_MASTER_URL=$(scw-server-tags | grep -Po '^kubernetes:master:url:\K(.*)$')
-if [[ $KUBERNETES_MASTER_URL == "" ]]
-then
-  # fallback to first master
-  KUBERNETES_MASTER_URL=$KUBERNETES_FIRST_MASTER
-fi
+KUBERNETES_VERSION=$(scw-server-tags | grep -Po '^kubernetes:master:version:\K(.*)$') || "v1.5.5"
 
+echo "KUBERNETES_MASTER_URL=$KUBERNETES_MASTER_URL" >>/etc/scw-env
+echo "KUBEADM_TOKEN=$KUBEADM_TOKEN" >>/etc/scw-env
+echo "KUBERNETES_VERSION=$KUBERNETES_VERSION" >>/etc/scw-env
 
-# use the private IP as hostname
-KUBERNETES_PROXY_HOSTNAME=$SCW_IPV4_PRIVATE
-echo "KUBERNETES_CLUSTERNAME=$KUBERNETES_CLUSTERNAME" >> /etc/scw-env
-echo "KUBERNETES_HOSTNAME=$KUBERNETES_HOSTNAME" >> /etc/scw-env
-echo "KUBERNETES_MASTERS_PRIVATE=$KUBERNETES_MASTERS_PRIVATE" >> /etc/scw-env
-echo "KUBERNETES_NODE_LABELS=$KUBERNETES_NODE_LABELS" >> /etc/scw-env
-echo "KUBERNETES_NODE_TAGS=$KUBERNETES_NODE_TAGS" >> /etc/scw-env
-echo "KUBERNETES_ROLE=$KUBERNETES_ROLE" >> /etc/scw-env
 
 # whether to actually launch the etcd.service
 # and whether we want to schedule containers on masters
 if [[ $KUBERNETES_ROLE == "master" ]]
 then
   # request that we actually launch kubectl.service
-  touch /tmp/scw-needs-kubelet-service
+  touch /tmp/scw-needs-kubeadm-service
 
-  # copy the required yml files to /etc/kubernetes, so kubelet picks them up
-  mkdir -p /etc/kubernetes/manifests
-  cp -a /etc/kubernetes/manifests-master/* /etc/kubernetes/manifests
-
-  # we are the master itself. Proxy localhost.
-  sed -e 's#KUBERNETES_PROXY_HOSTNAME#'$KUBERNETES_PROXY_HOSTNAME'#' \
-      -e 's#KUBERNETES_MASTER_URL#http://127.0.0.1:8080#' /etc/kubernetes/manifests-templates/kube-proxy.tmpl.yml > /etc/kubernetes/manifests/kube-proxy.yml
-
-  # check, whether we explicly requested scheduling on master
-  # otherwise fallback to `false
-  if [[ $KUBERNETES_MASTER_SCHEDULABLE == "true" ]]
-  then
-    echo "KUBERNETES_REGISTER_SCHEDULABLE=true" >> /etc/scw-env
-  else
-    echo "KUBERNETES_REGISTER_SCHEDULABLE=false" >> /etc/scw-env
-  fi
 elif [[ $KUBERNETES_ROLE == "worker" ]]
 then
-  # request that we actually launch kubectl.service
-  touch /tmp/scw-needs-kubelet-service
-
-  # schedule pods on workers
-  echo "KUBERNETES_REGISTER_SCHEDULABLE=true" >> /etc/scw-env
-
-  # setup the kube-proxy to talk to the master
-  mkdir -p /etc/kubernetes/manifests
-
-  # use the kubernetes master url to reach the service. The master url should be load-balanced in the best case
-  # the kubernetes service IP is the first IP from the service-ip-range
-  sed -e 's#KUBERNETES_PROXY_HOSTNAME#'$KUBERNETES_PROXY_HOSTNAME'#' \
-      -e 's#KUBERNETES_MASTER_URL#'$KUBERNETES_MASTER_URL'#' /etc/kubernetes/manifests-templates/kube-proxy.tmpl.yml > /etc/kubernetes/manifests/kube-proxy.yml
-fi
-
-# check, whether we need a valid kubeconfig
-if [ -f "/tmp/scw-needs-kubelet-service" ]
-then
-  # make sure kubelet directory exists
-  mkdir -p /var/lib/kubelet
-
-  # create kubeconfig with certs
-  cat << EOF > /var/lib/kubelet/kubeconfig
-apiVersion: v1
-kind: Config
-clusters:
-- name: local
-  cluster:
-    certificate-authority: /etc/kubernetes/pki/ca.pem
-contexts:
-- context:
-    cluster: local
-    user: kubelet
-users:
-- name: kubelet
-  user:
-    client-certificate: /etc/kubernetes/pki/client.pem
-    client-key: /etc/kubernetes/pki/client-key.pem
-EOF
-
+  touch /tmp/scw-needs-kubeadm-join
 fi
 
 ZEROTIER_NETWORK_ID=$(scw-server-tags | grep -Po '^zerotier:join:\K(.*)$')

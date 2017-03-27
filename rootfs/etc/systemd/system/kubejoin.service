@@ -1,0 +1,15 @@
+[Unit]
+Description=kubeadm
+Wants=network.target network-online.target scw-setup.service
+After=network.target network-online.target scw-setup.service
+# scw-setup checks, whether this node actually needs kubernetes.
+# if kubernetes is needed, scw-setup will touch the following file.
+ConditionPathExists=/tmp/scw-needs-kubeadm-join
+
+[Service]
+EnvironmentFile=-/etc/scw-env
+ExecStart=/usr/bin/kubeadm join \
+        --token=${KUBEADM_TOKEN}
+        ${SCW_IPV4_PRIVATE}
+RemainAfterExit=yes
+Type=oneshot

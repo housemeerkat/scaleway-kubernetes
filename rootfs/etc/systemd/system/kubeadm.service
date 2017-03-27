@@ -1,0 +1,19 @@
+[Unit]
+Description=kubeadm
+Wants=network.target network-online.target scw-setup.service
+After=network.target network-online.target scw-setup.service
+# scw-setup checks, whether this node actually needs kubernetes.
+# if kubernetes is needed, scw-setup will touch the following file.
+ConditionPathExists=/tmp/scw-needs-kubeadm-service
+
+[Service]
+EnvironmentFile=-/etc/scw-env
+ExecStart=/usr/bin/kubeadm init \
+        --external-etcd-endpoints=http://127.0.0.1:2379 \
+        --api-advertise-addresses=${SCW_IPV4_PUBLIC},${SCW_IPV4_PRIVATE}
+        --api-external-dns-names=${KUBERNETES_MASTER_URL}
+        --service-cidr=172.16.0.0/16 \
+        --use-kubernetes-version=${KUBERNETES_VERSION}
+        --token=${KUBEADM_TOKEN}
+RemainAfterExit=yes
+Type=oneshot
