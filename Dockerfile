@@ -24,6 +24,7 @@ RUN apt-get -q update \
         apt-transport-https \
         && add-apt-repository 'deb http://download.zerotier.com/debian/xenial xenial main' \
         && add-apt-repository 'deb http://apt.dockerproject.org/repo ubuntu-xenial main' \
+        && add-apt-repository 'deb http://apt.kubernetes.io/ kubernetes-xenial main' \
         && apt-get -q update \
         && apt-get install -y -q \
         apparmor \
