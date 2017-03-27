@@ -10,6 +10,6 @@ ConditionPathExists=/tmp/scw-needs-kubeadm-join
 EnvironmentFile=-/etc/scw-env
 ExecStart=/usr/bin/kubeadm join \
         --token=${KUBEADM_TOKEN}
-        ${SCW_IPV4_PRIVATE}
+        ${KUBERNETES_MASTER_URL}
 RemainAfterExit=yes
 Type=oneshot
