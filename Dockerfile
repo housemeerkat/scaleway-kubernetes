@@ -12,8 +12,7 @@ FROM scaleway/ubuntu:amd64-xenial
 RUN /usr/local/sbin/builder-enter
 
 RUN curl -s https://raw.githubusercontent.com/zerotier/ZeroTierOne/master/doc/contact%40zerotier.com.gpg | apt-key add - \
-  && curl -fsSL https://apt.dockerproject.org/gpg | apt-key add - \
-  && curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+  && curl -fsSL https://apt.dockerproject.org/gpg | apt-key add - 
 
 
 # Install docker dependencies & upgrade system
@@ -24,7 +23,6 @@ RUN apt-get -q update \
         apt-transport-https \
         && add-apt-repository 'deb http://download.zerotier.com/debian/xenial xenial main' \
         && add-apt-repository 'deb http://apt.dockerproject.org/repo ubuntu-xenial main' \
-        && add-apt-repository 'deb http://apt.kubernetes.io/ kubernetes-xenial main' \
         && apt-get -q update \
         && apt-get install -y -q \
         apparmor \
@@ -43,7 +41,6 @@ RUN apt-get -q update \
         ufw \
         vlan \
         zerotier-one \
-        kubelet kubeadm kubectl kubernetes-cni \
         && apt-get clean
 
 # Add local files into the root (extra config etc)

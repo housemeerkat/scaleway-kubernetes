@@ -1,0 +1,13 @@
+[Unit]
+Description=kubeadm install
+Wants=network.target network-online.target scw-setup.service
+After=network.target network-online.target scw-setup.service
+
+[Service]
+EnvironmentFile=-/etc/scw-env
+ExecStartPre=/bin/bash -c 'curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -'
+ExecStartPre=/bin/bash -c "add-apt-repository 'deb http://apt.kubernetes.io/ kubernetes-xenial main'"
+
+ExecStart=/bin/bash -c 'apt-get install -y kubelet kubeadm kubectl kubernetes-cni'
+RemainAfterExit=yes
+Type=oneshot
