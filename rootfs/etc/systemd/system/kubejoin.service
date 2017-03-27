@@ -8,8 +8,11 @@ ConditionPathExists=/tmp/scw-needs-kubeadm-join
 
 [Service]
 EnvironmentFile=-/etc/scw-env
+ExecStartPre=/usr/bin/curl -L -o /usr/bin/kubectl -z /usr/bin/kubectl -O https://storage.googleapis.com/kubernetes-release/release/${KUBERBETES_VERSION}/bin/linux/amd64/kubectl
+ExecStartPre=/usr/bin/curl -L -o /usr/bin/kubelet -z /usr/bin/kubelet -O https://storage.googleapis.com/kubernetes-release/release/${KUBERBETES_VERSION}/bin/linux/amd64/kubelet
+ExecStartPre=/usr/bin/curl -L -o /usr/bin/kubeadm -z /usr/bin/kubeadm -O https://storage.googleapis.com/kubernetes-release/release/${KUBERBETES_VERSION}/bin/linux/amd64/kubeadm
 ExecStart=/usr/bin/kubeadm join \
-        --token=${KUBEADM_TOKEN}
-        ${KUBERNETES_MASTER_URL}
+        --token=${KUBEADM_TOKEN} \
+        ${KUBERNETES_MASTER_URL}:6433
 RemainAfterExit=yes
 Type=oneshot

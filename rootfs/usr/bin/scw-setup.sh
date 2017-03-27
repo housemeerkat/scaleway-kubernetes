@@ -37,67 +37,14 @@ echo "SCW_MODEL=$SCW_MODEL" >>/etc/scw-env
 echo "SCW_REGION=$SCW_REGION" >> /etc/scw-env
 echo "SCW_TOKEN=$SCW_TOKEN" >>/etc/scw-env
 
-ETCD_CLUSTERNAME=$(scw-server-tags | grep -Po '^etcd:clustername:\K(.*)$')
-ETCD_DISCOVERY_TOKEN=$(scw-server-tags | grep -Po '^etcd:discover:\K(.*)$')
-ETCD_IS_PEER=$(scw-server-tags | grep -Po '^etcd:ispeer:\K(.*)$')
-ETCD_IS_PROXY=$(scw-server-tags | grep -Po '^etcd:isproxy:\K(.*)$')
-
-# query the Scaleway API and find all `etcd:ispeer:true` belonging to this ETCD_CLUSTERNAME
-ETCD_PEERS=$(
-curl --silent \
-  --fail \
-  -H "X-Auth-Token: ${SCW_TOKEN}" \
-  -H 'Content-Type: application/json' \
-  $SCW_API_ENDPOINT | jq '[.servers[] | select((.tags[] | contains("etcd:ispeer:true")) and (.tags[] | contains("etcd:clustername:'$ETCD_CLUSTERNAME'"))) | ["\(.id).priv.cloud.scaleway.com"]] | add | unique | join(",")'
-)
-
-echo "ETCD_CLUSTERNAME=$ETCD_CLUSTERNAME" >>/etc/scw-env
-echo "ETCD_DISCOVERY_TOKEN=$ETCD_DISCOVERY_TOKEN" >>/etc/scw-env
-echo "ETCD_PEERS=$ETCD_PEERS" >>/etc/scw-env
-echo "ETCD_NAME_NODE=$SCW_ID" >>/etc/scw-env
-
-# Should only be accessible from within the datacenter network.
-# we allow only localhost apiserver from kubernetes and etcd master have to be on the same machine
-echo "ETCD_ADVERTISE_CLIENT_URLS=http://127.0.0.1:2379" >>/etc/scw-env
-echo "ETCD_INITIAL_ADVERTISE_PEER_URLS=https://$SCW_DNSNAME_PRIVATE:2380" >>/etc/scw-env
-
-# This must be an IP-Address unless you use DNS-SRV discovery for etcd.
-# Be aware that the private IP will change if you terminate your machine.
-# we allow only localhost apiserver from kubernetes and etcd master have to be on the same machine
-echo "ETCD_LISTEN_CLIENT_URLS=http://127.0.0.1:2379" >>/etc/scw-env
-echo "ETCD_LISTEN_PEER_URLS=https://$SCW_IPV4_PRIVATE:2380" >>/etc/scw-env
-
-# map true/false to proxy config
-if [[ $ETCD_IS_PROXY == "true" ]]
-then
-  echo "ETCD_IS_PROXY=on" >>/etc/scw-env
-
-  # request that we actually launch etcd.service
-  touch /tmp/scw-needs-etcd-service
-else
-  echo "ETCD_IS_PROXY=off" >>/etc/scw-env
-fi
-
-# whether to actually launch the etcd.service
-if [[ $ETCD_IS_PEER == "true" ]]
-then
-  echo "ETCD_IS_PEER=true" >>/etc/scw-env
-
-  # request that we actually launch etcd.service
-  touch /tmp/scw-needs-etcd-service
-else
-  echo "ETCD_IS_PEER=false" >>/etc/scw-env
-fi
-
 KUBEADM_TOKEN=$(scw-server-tags | grep -Po '^kubernetes:kubeadm:token:\K(.*)$')
 
 KUBERNETES_MASTER_URL=$(scw-server-tags | grep -Po '^kubernetes:master:url:\K(.*)$')
-KUBERNETES_VERSION=$(scw-server-tags | grep -Po '^kubernetes:master:version:\K(.*)$') || "v1.5.5"
+KUBERNETES_VERSION=$(scw-server-tags | grep -Po '^kubernetes:version:\K(.*)$') || "v1.5.5"
 
 echo "KUBERNETES_MASTER_URL=$KUBERNETES_MASTER_URL" >>/etc/scw-env
 echo "KUBEADM_TOKEN=$KUBEADM_TOKEN" >>/etc/scw-env
 echo "KUBERNETES_VERSION=$KUBERNETES_VERSION" >>/etc/scw-env
-
 
 # whether to actually launch the etcd.service
 # and whether we want to schedule containers on masters

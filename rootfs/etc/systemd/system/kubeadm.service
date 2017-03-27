@@ -8,12 +8,14 @@ ConditionPathExists=/tmp/scw-needs-kubeadm-service
 
 [Service]
 EnvironmentFile=-/etc/scw-env
+ExecStartPre=/usr/bin/curl -L -o /usr/bin/kubectl -z /usr/bin/kubectl -O https://storage.googleapis.com/kubernetes-release/release/${KUBERBETES_VERSION}/bin/linux/amd64/kubectl
+ExecStartPre=/usr/bin/curl -L -o /usr/bin/kubelet -z /usr/bin/kubelet -O https://storage.googleapis.com/kubernetes-release/release/${KUBERBETES_VERSION}/bin/linux/amd64/kubelet
+ExecStartPre=/usr/bin/curl -L -o /usr/bin/kubeadm -z /usr/bin/kubeadm -O https://storage.googleapis.com/kubernetes-release/release/${KUBERBETES_VERSION}/bin/linux/amd64/kubeadm
 ExecStart=/usr/bin/kubeadm init \
-        --external-etcd-endpoints=http://127.0.0.1:2379 \
-        --api-advertise-addresses=${SCW_IPV4_PUBLIC},${SCW_IPV4_PRIVATE}
-        --api-external-dns-names=${KUBERNETES_MASTER_URL}
+        --api-cert-extra-sans=${SCW_IPV4_PUBLIC},{KUBERNETES_MASTER_URL} \
         --service-cidr=172.16.0.0/16 \
-        --use-kubernetes-version=${KUBERNETES_VERSION}
+        --kubernetes-version=${KUBERNETES_VERSION} \
+        --token-ttl=0 \
         --token=${KUBEADM_TOKEN}
 RemainAfterExit=yes
 Type=oneshot

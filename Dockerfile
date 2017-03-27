@@ -43,6 +43,12 @@ RUN apt-get -q update \
         zerotier-one \
         && apt-get clean
 
+
+# Install CNI plugins for kubelet cni mode
+RUN mkdir -p /opt/cni/bin \
+    && mkdir -p /etc/cni/net.d \
+    && curl -fsSL 'https://github.com/containernetworking/cni/releases/download/v0.5.1/cni-amd64-v0.5.1.tgz' | tar xvz -C /opt/cni/bin/
+
 # Add local files into the root (extra config etc)
 COPY ./rootfs/ /
 
