@@ -56,9 +56,7 @@ COPY ./rootfs/ /
 RUN addgroup early-docker
 
 RUN systemctl disable docker \
-    && systemctl enable docker \
-    && systemctl enable early-docker \
-    && systemctl enable etcd
+    && systemctl enable docker
 
 # Force new machine-ids for every new image.
 # Otherwise you might get ARP problems with duplicate mac addresses on the
