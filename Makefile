@@ -1,4 +1,4 @@
-NAME               = etcd-docker-kubernetes-weave
+NAME               = etcd-docker-kubeadm
 VERSION            = 1.5.5
 VERSION_ALIASES    = 1.5.5
 TITLE              = etcd-docker-kubernetes-weave
