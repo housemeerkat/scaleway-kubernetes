@@ -52,9 +52,6 @@ RUN mkdir -p /opt/cni/bin \
 # Add local files into the root (extra config etc)
 COPY ./rootfs/ /
 
-# Add early-docker group
-RUN addgroup early-docker
-
 RUN systemctl disable docker \
     && systemctl enable docker
 
